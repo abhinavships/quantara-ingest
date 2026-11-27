@@ -30,7 +30,7 @@ def build_routes(n=8, seed=7, online=True):
         if online:
             try:
                 u = f"https://router.project-osrm.org/route/v1/driving/{a[1]},{a[0]};{b[1]},{b[0]}?overview=full&geometries=geojson"
-                g = requests.get(u, timeout=8, headers={"User-Agent": "vehicle-sim/0.1"}).json()["routes"][0]["geometry"]["coordinates"]
+                g = requests.get(u, timeout=3, headers={"User-Agent": "vehicle-sim/0.1"}).json()["routes"][0]["geometry"]["coordinates"]
                 pts = [(y, x) for x, y in g][::3]
             except Exception:
                 pts = None

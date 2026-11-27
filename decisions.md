@@ -14,3 +14,6 @@
 13. **Rate**: 100 vehicles, telemetry every 5 s each (20 msg/s). Edge decisions stream as they happen. Raw 1 Hz equivalent is counted as `bytes_baseline` to report bytes saved.
 14. **Uplink buffer** drops oldest telemetry first; escalations/security are kept preferentially.
 15. **OSRM fallback**: routes are cached to `sim/routes.json`; when OSRM is unreachable a deterministic random-walk route is used and the source is stated in the README.
+16. **Python 3.12 confirmed** in the Condense IDE (3.12.14) and build; Dockerfile still pins it.
+17. **Topics are created explicitly** at startup (`quantara_core.topics.ensure_topics`, one registry = the data contract). Do not rely on broker auto-create. Partitions/retention per topic; replication 2.
+18. **Observability**: stdout logging, `PYTHONUNBUFFERED=1`, delivery-failure logging, a 30 s heartbeat with ok/failed counters and edge-resolved vs escalated.

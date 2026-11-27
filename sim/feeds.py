@@ -9,7 +9,7 @@ STATIONS = [{"id": f"ST{i}", "lat": 12.90 + 0.02 * (i % 4) + 0.01 * (i // 4), "l
 
 def weather(lat=12.97, lon=77.59):
     try:
-        j = requests.get("https://api.open-meteo.com/v1/forecast", timeout=6, params={
+        j = requests.get("https://api.open-meteo.com/v1/forecast", timeout=3, params={
             "latitude": lat, "longitude": lon, "current": "temperature_2m,wind_speed_10m"}).json()["current"]
         return {"ambient_c": j["temperature_2m"], "wind_kmh": j["wind_speed_10m"], "source": "open-meteo"}
     except Exception:
