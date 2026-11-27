@@ -2,7 +2,7 @@
 guard ranges and consent/OEM proofs. Every rejection is returned with a reason."""
 import time
 
-from argonaut_core import crypto
+from quantara_core import crypto
 
 NEEDS_CONSENT = {"behavioural", "software", "raise_power", "security_patch", "rulebook_update"}
 NEEDS_OEM = {"security_patch", "software"}

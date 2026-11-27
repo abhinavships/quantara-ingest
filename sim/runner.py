@@ -1,5 +1,5 @@
 """Glue: one vehicle + CAN bus + edge agent, stepped together. Used by tests and the fleet."""
-from argonaut_core import crypto
+from quantara_core import crypto
 from edge.agent import Agent
 from edge.ids import PcaAE, feats
 from sim.can import CanBus

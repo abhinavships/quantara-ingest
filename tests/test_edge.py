@@ -1,6 +1,6 @@
 import os
 import pytest
-from argonaut_core import crypto
+from quantara_core import crypto
 from sim.runner import Rig
 from edge.agent import Agent, chash
 from sim.runner import ids_model

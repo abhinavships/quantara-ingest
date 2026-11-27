@@ -1,4 +1,4 @@
-# argonaut-ingest (Input connector: simulator + edge agent)
+# quantara-ingest (Input connector: simulator + edge agent)
 
 Part 1 of 4 repos (ingest, stream, services, ops) for the Configure 2026 hackathon. **Everything is simulated.** No real vehicle is ever controlled; with `SANDBOX=1` the edge refuses any vehicle not flagged simulated.
 

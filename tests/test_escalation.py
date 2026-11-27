@@ -1,5 +1,5 @@
 import copy
-from argonaut_core import crypto
+from quantara_core import crypto
 from edge.policy import decide, Policy
 from edge.rulebook import DEFAULT
 from sim.runner import Rig

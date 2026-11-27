@@ -2,8 +2,8 @@
 <prefix>.raw.telemetry / .raw.edge / .raw.feeds; consumes signed commands + injection requests."""
 import time
 
-from argonaut_core import config, crypto
-from argonaut_core.bus import get_bus
+from quantara_core import config, crypto
+from quantara_core.bus import get_bus
 from sim.fleet import Fleet
 from sim.feeds import weather
 

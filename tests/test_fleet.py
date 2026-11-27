@@ -1,5 +1,5 @@
-from argonaut_core import crypto
-from argonaut_core.bus import MemBus
+from quantara_core import crypto
+from quantara_core.bus import MemBus
 from sim.fleet import Fleet
 
 FALLBACK = [[(12.9 + i * 1e-3, 77.5 + i * 1e-3) for i in range(40)]]
