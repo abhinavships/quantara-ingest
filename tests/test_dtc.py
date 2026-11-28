@@ -29,3 +29,12 @@ def test_derate_is_reduce_only_and_floored():
 def test_vehicle_without_diag_is_untouched():
     r = Rig("V9", 3); r.run(60)
     assert not r.agent.inc and r.agent.ctl.power_cap == 1.0
+
+
+def test_situation_applies_only_energy_penalty_and_ignores_text():
+    from tests.test_fleet import mk
+    f, _ = mk(3)
+    before = {v: r.v.soc for v, r in f.rigs.items()}
+    f.inject("situation", None, params={"energy_penalty": 0.2, "text": "ignored"})
+    assert all(f.rigs[v].v.soc <= max(0.05, before[v] - 0.2) + 1e-9 for v in before)
+    assert not any(r.agent.inc for r in f.rigs.values())

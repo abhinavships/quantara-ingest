@@ -37,7 +37,7 @@ def main():
         t0 = time.time()
         try:
             for topic, _, m in bus.poll(grp, inbox, timeout=0.01):
-                if topic == T("control.inject"): fleet.inject(m["scenario"], m.get("vehicles"))
+                if topic == T("control.inject"): fleet.inject(m["scenario"], m.get("vehicles"), params=m.get("params"))
                 else: bus.publish(T("raw.edge"), fleet.deliver(m), key=m.get("vehicle_id"))
             for m in fleet.step():
                 bus.publish(T("raw.telemetry") if m["kind"] == "telemetry" else T("raw.edge"), m, key=m["vehicle_id"])

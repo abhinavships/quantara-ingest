@@ -30,6 +30,10 @@ class Fleet:
         self.t = 0
 
     def inject(self, scenario, vids=None, **kw):
+        if scenario == "situation":          # free-text world event for the CLOUD model; the sim only applies physical numbers it can
+            pen = max(0.0, min(0.5, float(((kw.get("params") or {}).get("energy_penalty")) or 0)))
+            for r in self.rigs.values(): r.v.soc = max(0.05, r.v.soc - pen)
+            return
         vids = vids or list(self.rigs)[:1]
         if scenario == "grid_outage":
             self.grid.set_outage(True)
