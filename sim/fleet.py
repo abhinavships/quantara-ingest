@@ -4,8 +4,15 @@ from sim.feeds import Grid
 from sim.routes import build_routes
 from sim.runner import Rig
 
+# scenario -> diag side-channel values (what the vehicle's ECUs/gateways would report)
+DIAG_FAULTS = {"contactor_stuck": {"contactor_weld": 1}, "dcdc_fail": {"dcdc_v": 10.9}, "bms_comm_lost": {"bms_alive": 0},
+               "battery_degraded": {"cell_spread_mv": 210}, "obd_dongle": {"obd_msgs": 12}, "ecu_busoff": {"err_frames": 60},
+               "tcu_intrusion": {"tcu_unknown_conns": 3}, "rogue_charger": {"charger_proto_err": 4}, "adas_spoof": {"adas_disagree": 0.9}}
+
+
 SCENARIOS = ("breakdown", "grid_outage", "degradation", "cyber_flood", "cyber_fuzz", "cyber_spoof",
-             "cyber_replay", "cal_tamper", "telemetry_mismatch", "pump_recover", "clear", "link_down", "link_up")
+             "cyber_replay", "cal_tamper", "telemetry_mismatch", "pump_recover", "clear", "link_down", "link_up",
+             *DIAG_FAULTS)
 
 
 class Fleet:
@@ -39,8 +46,9 @@ class Fleet:
             elif scenario == "telemetry_mismatch": self.mismatch.add(vid)
             elif scenario == "link_down": r.agent.up.set_link(False)
             elif scenario == "link_up": r.agent.up.set_link(True)
+            elif scenario in DIAG_FAULTS: r.diag.update(DIAG_FAULTS[scenario])
             elif scenario == "clear":
-                r.bus.attack = None; r.v.flow_fault = 1.0; r.v.tyre_drag = 1.0; r.v.demand = 0.6
+                r.diag.clear(); r.bus.attack = None; r.v.flow_fault = 1.0; r.v.tyre_drag = 1.0; r.v.demand = 0.6
                 self.mismatch.discard(vid)
 
     def deliver(self, cmd):
@@ -55,7 +63,7 @@ class Fleet:
         self.t += 1
         self.out.clear()
         for vid, r in self.rigs.items():
-            r.external = {"grid_outage": self.grid.outage}
+            r.external = {"grid_outage": self.grid.outage, "diag": r.diag}
             r.run(1)
             ri, k = self.pos[vid]; route = self.routes[ri]
             self.pos[vid] = (ri, k + 1)
