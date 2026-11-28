@@ -39,6 +39,7 @@ class Vehicle:
         eff = 6.5 / (self.tyre_drag * (1 + self.hvac_kw / 6) )   # km/kWh
         self.kpk = eff * (1 + self.r.gauss(0, 0.01))
         self.soc = max(0, self.soc - (P + self.hvac_kw) * dt / 3600 / 60)
+        if self.soc < 0.1: self.soc = 0.9                  # simulated charging stop so a long-running fleet never sits at 0% (ponytail: instant recharge)
         self.t += dt
         self._chassis(dt)
         return self.sample()
