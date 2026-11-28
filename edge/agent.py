@@ -5,6 +5,8 @@ import os
 import time
 from collections import deque
 
+from .dtc import CLEAR_HOLD, DEFAULTS, DTCS, DWELL
+from .evaluator import safe_eval
 from .ids import Ids
 from .ota import OtaClient
 from .policy import Policy, decide
@@ -24,9 +26,10 @@ class Controller:
     def __init__(self):
         self.edge_cap, self.cloud_cap, self.limp, self.edge_limp = 1.0, 1.0, 1.0, 1.0
         self.isolated, self.ignored, self.applied, self.hot = set(), set(), [], False
+        self.dtc_caps, self.dtc_limp = {}, {}              # per-DTC reduce-only limits
 
     @property
-    def power_cap(self): return max(DERATE_FLOOR, min(self.edge_cap, self.cloud_cap))
+    def power_cap(self): return max(DERATE_FLOOR, min(self.edge_cap, self.cloud_cap, *self.dtc_caps.values()))
 
 
 class Uplink:
@@ -67,6 +70,7 @@ class Agent:
         self.est, self.est_ok, self.onset, self.heat_ewma = None, True, {}, 0.0
         self.kpk_base, self.last_temp = None, None
         self.cal_ok = True
+        self.dtc_state = {d["dtc"]: {"on": 0, "off": 0} for d in DTCS}
 
     # ---------- helpers ----------
     def _est_step(self, P, flow, dt):
@@ -170,8 +174,9 @@ class Agent:
             else: cause, conf, comp = self._attribute(f)
             acts = [a["action"]["type"] + (f"={a['action']['value']}" if a["action"]["type"] == "derate" else "")
                     for a in active]
-            self._open("thermal", cause, conf, {k: round(v, 3) for k, v in f.items() if k in
-                       ("temp", "flow_ratio", "power_frac", "heat_resid", "temp_slope")}, acts, comp)
+            ev = {k: round(v, 3) for k, v in f.items() if k in ("temp", "flow_ratio", "power_frac", "heat_resid", "temp_slope")}
+            if cause == "pump_fault": ev["dtc"] = "P0A93"       # inverter/battery cooling system performance
+            self._open("thermal", cause, conf, ev, acts, comp)
         if "thermal" in self.inc:
             inc = self.inc["thermal"]
             inc["actions"] = sorted(set(inc["actions"]) | {a["action"]["type"] + (f"={a['action']['value']}" if a["action"]["type"] == "derate" else "") for a in active})
@@ -212,13 +217,38 @@ class Agent:
         if external.get("grid_outage") and f["soc"] < 0.5 and "grid" not in self.inc:
             self._open("grid", "grid_outage", 0.8, {"soc": f["soc"]}, ["notify_driver"], fleet_pattern=True)
         if "grid" in self.inc and not external.get("grid_outage"): self._close("grid", "cleared")
+        self._diag(s, external.get("diag") or {})
         # telemetry (decimated) and ring buffer
         self.ring.append({"t": self.tick_n, **{k: v for k, v in sig.items()}})
         if self.tick_n % self.tel_every == 0:
             self.up.send({"kind": "telemetry", "vehicle_id": self.vid, "ts": self.t, "sim": self.sim,
                           "signals": sig, "edge": {"cap": round(self.ctl.power_cap, 2), "rb": self.eng.version,
                                                     "ignored": sorted(self.ctl.ignored)}})
-        return {"power_cap": self.ctl.power_cap, "speed_cap": min(self.ctl.limp, self.ctl.edge_limp)}
+        return {"power_cap": self.ctl.power_cap, "speed_cap": min(self.ctl.limp, self.ctl.edge_limp, *self.ctl.dtc_limp.values())}
+
+    def _diag(self, s, diag):
+        """Deterministic DTC / intrusion rules with dwell + clear-hold. Reduce-only actions."""
+        env = {**DEFAULTS, **{k: v for k, v in diag.items() if isinstance(v, (int, float, bool))}, "speed": s["Vehicle.Speed"]}
+        for d in DTCS:
+            key, st = "dtc:" + d["dtc"], self.dtc_state[d["dtc"]]
+            hit = bool(safe_eval(d["when"], env))
+            if key not in self.inc:
+                st["on"] = st["on"] + 1 if hit else 0
+                if st["on"] >= DWELL:
+                    ev = {"dtc": d["dtc"], **{k: env[k] for k in env if env[k] != DEFAULTS[k] and k != "speed"}}
+                    flags = {k: True for k in ("security", "service_required") if d.get(k)}
+                    for a in d["actions"]:
+                        if a.startswith("derate="): self.ctl.dtc_caps[key] = float(a.split("=")[1])
+                        elif a == "limp": self.ctl.dtc_limp[key] = 0.5
+                        elif a.startswith(("isolate_", "stop_")): self.ctl.isolated.add(a)
+                    self._open(key, d["cause"], 0.95, ev, d["actions"], **flags)
+            else:
+                st["off"] = st["off"] + 1 if not hit else 0
+                self._maybe_escalate(self.inc[key], "tick")
+                if st["off"] >= CLEAR_HOLD:
+                    self.ctl.dtc_caps.pop(key, None); self.ctl.dtc_limp.pop(key, None)
+                    for a in d["actions"]: self.ctl.isolated.discard(a)
+                    self._close(key, "cleared"); st["on"] = 0
 
     def counters(self):
         tot = self.n["resolved"] + self.n["escalated"]

@@ -21,7 +21,7 @@ class Rig:
         self.v, self.bus = Vehicle(vid, seed, sim), CanBus(seed)
         self.agent = Agent(vid, sim, self.out.append, ids_model(), self.pub, policy, rulebook,
                            golden_cal=dict(self.v.cal))
-        self.external, self.maxT = {}, 0.0
+        self.external, self.maxT, self.diag = {}, 0.0, {}
 
     def run(self, n, demand=None, hook=None):
         if demand is not None: self.v.demand = demand
@@ -29,7 +29,7 @@ class Rig:
             if hook: hook(self, i)
             s = self.v.step()
             fr = self.bus.window(self.v.t, self.v.speed, s["Motor.Current"], self.v.T)
-            o = self.agent.tick(s, fr, self.external, cal=self.v.cal)
+            o = self.agent.tick(s, fr, {**self.external, "diag": self.diag}, cal=self.v.cal)
             self.v.power_cap, self.v.speed_cap = o["power_cap"], o["speed_cap"]
             self.maxT = max(self.maxT, self.v.T)
         return self

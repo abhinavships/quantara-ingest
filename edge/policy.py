@@ -22,4 +22,5 @@ def decide(inc: dict, p: Policy = Policy()):
     if inc.get("needs_consent") or inc.get("needs_software") or inc.get("needs_rulebook"): r.append("needs_consent_or_update")
     if inc.get("fleet_pattern"): r.append("fleet_pattern")
     if inc.get("security"): r.append("security")
+    if inc.get("service_required"): r.append("service_required")
     return bool(r), r

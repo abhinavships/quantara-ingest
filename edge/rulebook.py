@@ -8,7 +8,8 @@ from .evaluator import compile_expr, safe_eval, UnsafeExpression
 
 DERATE_FLOOR = 0.4
 ABS_LIMITS = {"warn": 45.0, "derate": 50.0, "critical": 58.0}   # hard ceilings, never raised
-REDUCE_ONLY = {"derate", "limp", "alert", "isolate_can", "restore_calibration", "ignore_sensor"}
+REDUCE_ONLY = {"derate", "limp", "alert", "isolate_can", "restore_calibration", "ignore_sensor", "isolate_obd", "isolate_tcu",
+               "isolate_charger", "stop_charge", "downweight_adas"}
 
 DEFAULT = {
     "version": 1,
